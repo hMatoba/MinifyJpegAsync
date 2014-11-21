@@ -23,7 +23,7 @@ How to Use
 ----------
     <input type="file" id="files" name="files[]" multiple />
     <script source="/js/MinifyJpegAsync.js" />
-    ******************************************
+    <script>
     function post(data) {
         req.open("POST", "/jpeg", false);
         req.setRequestHeader('Content-Type', 'image\/jpeg');
@@ -41,6 +41,9 @@ How to Use
             reader.readAsDataURL(f);
         }
     }
+
+    document.getElementById('files').addEventListener('change', handleFileSelect, false);
+    </script>
 
 
 License
