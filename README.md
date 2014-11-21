@@ -1,4 +1,4 @@
-JavaScript-MinifyJpeg
+JavaScript-MinifyJpegAsync
 =====================
 
 To minify JPEG images without losing EXIF.
@@ -22,7 +22,7 @@ Functions
 How to Use
 ----------
     <input type="file" id="files" name="files[]" multiple />
-    <script source="/js/MinifyJpeg.js" />
+    <script source="/js/MinifyJpegAsync.js" />
     ******************************************
     function post(data) {
         req.open("POST", "/jpeg", false);

@@ -67,7 +67,6 @@ function handleFiles()
         //MinifyJpeg.minify(e.target.result, length, postJpeg);
     };
 
-    // Read in the image file as a data URL.
     reader.readAsDataURL(f);
 }
 
@@ -78,7 +77,7 @@ function print(data)
     var html = '<br><img src="' + enc + '"><br>';
     $('#resized').prepend(html);
 
-    // loop left file processing
+    // loop left files processing
     handleFiles();
 }
 
