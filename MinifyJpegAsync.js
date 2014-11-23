@@ -99,8 +99,8 @@ var MinifyJpegAsync = (function () {
             if (rawImageArray[head] == 255 && rawImageArray[head + 1] == 216) {
                 head += 2;
             } else {
-                length = rawImageArray[head + 2] * 256 + rawImageArray[head + 3],
-                endPoint = head + length + 2,
+                length = rawImageArray[head + 2] * 256 + rawImageArray[head + 3];
+                endPoint = head + length + 2;
                 seg = rawImageArray.slice(head, endPoint);
                 segments.push(seg);
                 head = endPoint;
@@ -120,7 +120,7 @@ var MinifyJpegAsync = (function () {
         for (var x = 0; x < segments.length; x++) {
             seg = segments[x];
             if (that.SOF.indexOf(seg[1]) >= 0) {
-                height = seg[5] * 256 + seg[6],
+                height = seg[5] * 256 + seg[6];
                 width = seg[7] * 256 + seg[8];
                 break;
             }
@@ -248,7 +248,7 @@ var MinifyJpegAsync = (function () {
             }
         }
         return [];
-    }
+    };
 
     that.insertExif = function (imageStr, exifArray) {
         var buf = that.decode64(imageStr.replace("data:image/jpeg;base64,", "")),
@@ -271,7 +271,7 @@ var MinifyJpegAsync = (function () {
         var un_x = 1.0 - x;
         var un_y = 1.0 - y;
         return (f00 * un_x * un_y + f10 * x * un_y + f01 * un_x * y + f11 * x * y);
-    }    
+    };
     
     that.bilinear = function (srcImg, destImg, scale) {
         // taking the unit square
