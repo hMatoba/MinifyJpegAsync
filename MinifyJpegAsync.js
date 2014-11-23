@@ -19,13 +19,12 @@ var MinifyJpegAsync = (function () {
     "use strict";
     var that = {};
 
-    that.KEY_STR = "ABCDEFGHIJKLMNOP" +
+    var KEY_STR = "ABCDEFGHIJKLMNOP" +
         "QRSTUVWXYZabcdef" +
         "ghijklmnopqrstuv" +
         "wxyz0123456789+/" +
         "=";
-
-    that.SOF = [192, 193, 194, 195, 197, 198, 199, 201, 202, 203, 205, 206, 207];
+    var SOF = [192, 193, 194, 195, 197, 198, 199, 201, 202, 203, 205, 206, 207];
 
     that.minify = function (image, new_size, callback) {
         var imageObj = new Image(),
@@ -53,9 +52,9 @@ var MinifyJpegAsync = (function () {
         }
 
         imageObj.onload = function () {
-            var segments = that.slice2Segments(rawImage),
+            var segments = slice2Segments(rawImage),
                 NEW_SIZE = parseInt(new_size),
-                size = that.imageSizeFromSegments(segments),
+                size = imageSizeFromSegments(segments),
                 chouhen = (size[0] >= size[1]) ? size[0] : size[1];
             var exif,
                 resized,
@@ -65,11 +64,11 @@ var MinifyJpegAsync = (function () {
                 return new Uint8Array(rawImage);
             }
 
-            exif = that.getExif(segments);
-            resized = that.resize(imageObj, segments, NEW_SIZE);
+            exif = getExif(segments);
+            resized = resize(imageObj, segments, NEW_SIZE);
 
             if (exif.length) {
-                newImage = that.insertExif(resized, exif);
+                newImage = insertExif(resized, exif);
             } else {
                 newImage = new Uint8Array(that.decode64(resized.replace("data:image/jpeg;base64,", "")));
             }
@@ -80,46 +79,13 @@ var MinifyJpegAsync = (function () {
 
     };
 
-    that.getImageSize = function (imageArray) {
-        var segments = that.slice2Segments(imageArray);
-        return that.imageSizeFromSegments(segments);
-    };
-
-    that.slice2Segments = function (rawImageArray) {
-        var head = 0,
-            segments = [];
-        var length,
-            endPoint,
-            seg;
-        
-        while (1) {
-            if (rawImageArray[head] == 255 && rawImageArray[head + 1] == 218) {
-                break;
-            }
-            if (rawImageArray[head] == 255 && rawImageArray[head + 1] == 216) {
-                head += 2;
-            } else {
-                length = rawImageArray[head + 2] * 256 + rawImageArray[head + 3];
-                endPoint = head + length + 2;
-                seg = rawImageArray.slice(head, endPoint);
-                segments.push(seg);
-                head = endPoint;
-            }
-            if (head > rawImageArray.length) {
-                break;
-            }
-        }
-
-        return segments;
-    };
-
-    that.imageSizeFromSegments = function (segments) {
+    var imageSizeFromSegments = function (segments) {
         var seg,
             width,
             height;
         for (var x = 0; x < segments.length; x++) {
             seg = segments[x];
-            if (that.SOF.indexOf(seg[1]) >= 0) {
+            if (SOF.indexOf(seg[1]) >= 0) {
                 height = seg[5] * 256 + seg[6];
                 width = seg[7] * 256 + seg[8];
                 break;
@@ -150,10 +116,10 @@ var MinifyJpegAsync = (function () {
                 enc4 = 64;
             }
 
-            output += that.KEY_STR.charAt(enc1) +
-                that.KEY_STR.charAt(enc2) +
-                that.KEY_STR.charAt(enc3) +
-                that.KEY_STR.charAt(enc4);
+            output += KEY_STR.charAt(enc1) +
+                KEY_STR.charAt(enc2) +
+                KEY_STR.charAt(enc3) +
+                KEY_STR.charAt(enc4);
             chr1 = chr2 = chr3 = "";
             enc1 = enc2 = enc3 = enc4 = "";
         } while (i < input.length);
@@ -177,10 +143,10 @@ var MinifyJpegAsync = (function () {
         input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
 
         do {
-            enc1 = that.KEY_STR.indexOf(input.charAt(i++));
-            enc2 = that.KEY_STR.indexOf(input.charAt(i++));
-            enc3 = that.KEY_STR.indexOf(input.charAt(i++));
-            enc4 = that.KEY_STR.indexOf(input.charAt(i++));
+            enc1 = KEY_STR.indexOf(input.charAt(i++));
+            enc2 = KEY_STR.indexOf(input.charAt(i++));
+            enc3 = KEY_STR.indexOf(input.charAt(i++));
+            enc4 = KEY_STR.indexOf(input.charAt(i++));
 
             chr1 = (enc1 << 2) | (enc2 >> 4);
             chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
@@ -203,8 +169,42 @@ var MinifyJpegAsync = (function () {
         return buf;
     };
 
-    that.resize = function (img, segments, NEW_SIZE) {
-        var size = that.imageSizeFromSegments(segments),
+
+    var getImageSize = function (imageArray) {
+        var segments = slice2Segments(imageArray);
+        return imageSizeFromSegments(segments);
+    };
+
+    var slice2Segments = function (rawImageArray) {
+        var head = 0,
+            segments = [];
+        var length,
+            endPoint,
+            seg;
+        
+        while (1) {
+            if (rawImageArray[head] == 255 && rawImageArray[head + 1] == 218) {
+                break;
+            }
+            if (rawImageArray[head] == 255 && rawImageArray[head + 1] == 216) {
+                head += 2;
+            } else {
+                length = rawImageArray[head + 2] * 256 + rawImageArray[head + 3];
+                endPoint = head + length + 2;
+                seg = rawImageArray.slice(head, endPoint);
+                segments.push(seg);
+                head = endPoint;
+            }
+            if (head > rawImageArray.length) {
+                break;
+            }
+        }
+
+        return segments;
+    };
+    
+    var resize = function (img, segments, NEW_SIZE) {
+        var size = imageSizeFromSegments(segments),
             width = size[0],
             height = size[1],
             chouhen = (width >= height) ? width : height,
@@ -232,13 +232,13 @@ var MinifyJpegAsync = (function () {
         newCanvas.height = newHeight;
         newCtx = newCanvas.getContext("2d");
         destImg = newCtx.createImageData(newWidth, newHeight);
-        that.bilinear(srcImg, destImg, scale);
+        bilinear(srcImg, destImg, scale);
 
         newCtx.putImageData(destImg, 0, 0);
         return newCanvas.toDataURL("image/jpeg");
     };
 
-    that.getExif = function (segments) {
+    var getExif = function (segments) {
         var seg;
         for (var x = 0; x < segments.length; x++) {
             seg = segments[x];
@@ -250,7 +250,7 @@ var MinifyJpegAsync = (function () {
         return [];
     };
 
-    that.insertExif = function (imageStr, exifArray) {
+    var insertExif = function (imageStr, exifArray) {
         var buf = that.decode64(imageStr.replace("data:image/jpeg;base64,", "")),
             separatePoint = buf.indexOf(255, 3),
             mae = buf.slice(0, separatePoint),
@@ -262,18 +262,18 @@ var MinifyJpegAsync = (function () {
     };
 
     // compute vector index from matrix one
-    that.ivect = function (ix, iy, w) {
+    var ivect = function (ix, iy, w) {
         // byte array, r,g,b,a
         return ((ix + w * iy) * 4);
     };
 
-    that.inner = function (f00, f10, f01, f11, x, y) {
+    var inner = function (f00, f10, f01, f11, x, y) {
         var un_x = 1.0 - x;
         var un_y = 1.0 - y;
         return (f00 * un_x * un_y + f10 * x * un_y + f01 * un_x * y + f11 * x * y);
     };
     
-    that.bilinear = function (srcImg, destImg, scale) {
+    var bilinear = function (srcImg, destImg, scale) {
         // taking the unit square
         var srcWidth = srcImg.width;
         var srcHeight = srcImg.height;
@@ -292,29 +292,29 @@ var MinifyJpegAsync = (function () {
                 ixv = (j + 0.5) / scale - 0.5;
                 ix0 = Math.floor(ixv);
                 ix1 = (Math.ceil(ixv) > (srcWidth - 1) ? (srcWidth - 1) : Math.ceil(ixv));
-                idxD = that.ivect(j, i, destImg.width);
-                idxS00 = that.ivect(ix0, iy0, srcWidth);
-                idxS10 = that.ivect(ix1, iy0, srcWidth);
-                idxS01 = that.ivect(ix0, iy1, srcWidth);
-                idxS11 = that.ivect(ix1, iy1, srcWidth);
+                idxD = ivect(j, i, destImg.width);
+                idxS00 = ivect(ix0, iy0, srcWidth);
+                idxS10 = ivect(ix1, iy0, srcWidth);
+                idxS01 = ivect(ix0, iy1, srcWidth);
+                idxS11 = ivect(ix1, iy1, srcWidth);
 
                 dx = ixv - ix0;
                 dy = iyv - iy0;
 
                 //r
-                dstData[idxD] = that.inner(srcData[idxS00], srcData[idxS10],
+                dstData[idxD] = inner(srcData[idxS00], srcData[idxS10],
                     srcData[idxS01], srcData[idxS11], dx, dy);
 
                 //g
-                dstData[idxD + 1] = that.inner(srcData[idxS00 + 1], srcData[idxS10 + 1],
+                dstData[idxD + 1] = inner(srcData[idxS00 + 1], srcData[idxS10 + 1],
                     srcData[idxS01 + 1], srcData[idxS11 + 1], dx, dy);
 
                 //b
-                dstData[idxD + 2] = that.inner(srcData[idxS00 + 2], srcData[idxS10 + 2],
+                dstData[idxD + 2] = inner(srcData[idxS00 + 2], srcData[idxS10 + 2],
                     srcData[idxS01 + 2], srcData[idxS11 + 2], dx, dy);
 
                 //a
-                dstData[idxD + 3] = that.inner(srcData[idxS00 + 3], srcData[idxS10 + 3],
+                dstData[idxD + 3] = inner(srcData[idxS00 + 3], srcData[idxS10 + 3],
                     srcData[idxS01 + 3], srcData[idxS11 + 3], dx, dy);
 
             }
