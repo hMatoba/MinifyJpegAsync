@@ -7,52 +7,58 @@
   <script src="MinifyJpegAsync.js"></script>
 </head>
 <body>
-    長辺の長さ(longside length): <input type="text" id="length" value="1280"><br><br>
+    長辺の長さ(longside length): <input type="text" id="length" value="480"><br><br>
     <div id="up">JPEG FILES ONLY<br>You can choose multiple files<br></div>
     <div id="shori"></div>
     <div id="resized"></div>
 <script>
+if (typeof window.navigator.msSaveBlob === "undefined") {
+    var saveJpeg = null;
+} else {
+    $("#up").append("IE 10 and 11, left-click on image to save.<br>");
+    var n = 0;
+    var saveJpeg = function (blob) {
+        return function () {
+            window.navigator.msSaveBlob(blob, "minifyDemo" + (n++) + ".jpg");
+        };
+    };
+}
+
+
 var processedFiles = [];
 var fileArray = [];
 
-
 function handleFileSelect(evt) {
     length = parseInt($('#length').val());
-    if (!length){return;}
+    if (!length) {
+        return;
+    }
     var files = evt.target.files; // FileList object
     fileArray = [];
-    for (var x=0; x<files.length ; x++)
-    {
+    for (var x = 0; x < files.length; x++) {
         fileArray.push(files[x]);
     }
     handleFiles();
 }
 
 
-function handleFiles()
-{
-    if (fileArray.length == 0)
-    {
+function handleFiles() {
+    if (fileArray.length == 0) {
         $("#keika").html("FINISHED");
         $("#shori").html('');
         return;
     }
-    while (!fileArray[0].type.match('image/jpeg.*'))
-    {
-        if (fileArray.length == 0)
-        {
+    while (!fileArray[0].type.match('image/jpeg.*')) {
+        if (fileArray.length == 0) {
             $("#keika").html("FINISHED")
             return;
-        }
-        else
-        {
+        } else {
             fileArray.shift(0);
         }
     }
     f = fileArray.shift(0);
     $("#keika").html("Left: " + (fileArray.length + 1));
-    if (processedFiles.indexOf(f.name) >= 0)
-    {
+    if (processedFiles.indexOf(f.name) >= 0) {
         return handleFiles();
     }
     processedFiles.push(f.name);
@@ -61,8 +67,7 @@ function handleFiles()
     $("#shori").html('<div id="load' + n + '">loading: ' + f.name + '</div>');
 
     // Jpeg processing
-    reader.onloadend = function(e)
-    {
+    reader.onloadend = function (e) {
         MinifyJpegAsync.minify(e.target.result, length, print);
         //MinifyJpeg.minify(e.target.result, length, postJpeg);
     };
@@ -71,19 +76,25 @@ function handleFiles()
 }
 
 
-function print(data)
-{
+function print(data) {
     var enc = "data:image/jpeg;base64," + MinifyJpegAsync.encode64(data);
-    var html = '<br><img src="' + enc + '"><br>';
-    $('#resized').prepend(html);
+    var img = new Image();
+    img.src = enc;
+    if (saveJpeg) {
+        var blob = new Blob([data], {
+            type: "image\/jpeg"
+        });
+        img.onclick = saveJpeg(blob);
+    }
+    $('#resized').prepend(img);
+    $('#resized').prepend("<br><br>");
 
     // loop left files processing
     handleFiles();
 }
 
 
-function postJpeg(data)
-{
+function postJpeg(data) {
     var req = new XMLHttpRequest();
     req.open("POST", "/resize", false);
     req.setRequestHeader('Content-Type', 'image\/jpeg');
@@ -91,22 +102,18 @@ function postJpeg(data)
 }
 
 
-document.body.onload = function()
-{
-    if (typeof(FileReader) == "function")
-    {
+document.body.onload = function () {
+    if (typeof (FileReader) == "function") {
         var html = '<input type="file" id="files" class="form" name="files[]" multiple /><br>' +
-                   '<div id="keika"><div>'
+            '<div id="keika"><div>'
         $('#up').append(html);
         document.getElementById('files').addEventListener('change', handleFileSelect, false);
-    }
-    else
-    {
+    } else {
         var html = '<form action="/up" method="post" enctype="multipart/form-data">' +
-                   '<fieldset><legend>写真を追加</legend>' +
-                   '<input type="file" name="photo[]" multiple/><br>' +
-                   '<input type = "submit" value="写真を送る">' +
-                   '</fieldset></form><br><br>';
+            '<fieldset><legend>写真を追加</legend>' +
+            '<input type="file" name="photo[]" multiple/><br>' +
+            '<input type = "submit" value="写真を送る">' +
+            '</fieldset></form><br><br>';
         $('#up').append("");
     }
 };
