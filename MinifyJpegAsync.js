@@ -79,20 +79,6 @@ var MinifyJpegAsync = (function () {
 
     };
 
-    var imageSizeFromSegments = function (segments) {
-        var seg,
-            width,
-            height;
-        for (var x = 0; x < segments.length; x++) {
-            seg = segments[x];
-            if (SOF.indexOf(seg[1]) >= 0) {
-                height = seg[5] * 256 + seg[6];
-                width = seg[7] * 256 + seg[8];
-                break;
-            }
-        }
-        return [width, height];
-    };
 
     that.encode64 = function (input) {
         var output = "",
@@ -169,11 +155,28 @@ var MinifyJpegAsync = (function () {
         return buf;
     };
 
+    
+    var imageSizeFromSegments = function (segments) {
+        var seg,
+            width,
+            height;
+        for (var x = 0; x < segments.length; x++) {
+            seg = segments[x];
+            if (SOF.indexOf(seg[1]) >= 0) {
+                height = seg[5] * 256 + seg[6];
+                width = seg[7] * 256 + seg[8];
+                break;
+            }
+        }
+        return [width, height];
+    };
+
 
     var getImageSize = function (imageArray) {
         var segments = slice2Segments(imageArray);
         return imageSizeFromSegments(segments);
     };
+
 
     var slice2Segments = function (rawImageArray) {
         var head = 0,
@@ -202,7 +205,8 @@ var MinifyJpegAsync = (function () {
 
         return segments;
     };
-    
+
+
     var resize = function (img, segments, NEW_SIZE) {
         var size = imageSizeFromSegments(segments),
             width = size[0],
@@ -218,7 +222,6 @@ var MinifyJpegAsync = (function () {
             newCanvas,
             newCtx,
             destImg;
-        
         
         canvas = document.createElement('canvas');
         canvas.width = width;
@@ -238,6 +241,7 @@ var MinifyJpegAsync = (function () {
         return newCanvas.toDataURL("image/jpeg");
     };
 
+
     var getExif = function (segments) {
         var seg;
         for (var x = 0; x < segments.length; x++) {
@@ -250,16 +254,18 @@ var MinifyJpegAsync = (function () {
         return [];
     };
 
-    var insertExif = function (imageStr, exifArray) {
-        var buf = that.decode64(imageStr.replace("data:image/jpeg;base64,", "")),
-            separatePoint = buf.indexOf(255, 3),
-            mae = buf.slice(0, separatePoint),
-            ato = buf.slice(separatePoint),
-            array = mae.concat(exifArray, ato),
-            aBuffer = new Uint8Array(array);
 
-        return aBuffer;
+    var insertExif = function (imageStr, exifArray) {
+        var buf = that.decode64(imageStr.replace("data:image/jpeg;base64,", ""));
+        if (buf[2] != 255 || buf[3] != 224) {
+            throw "Couldn't find APP0 marker from resized image data.";
+        }
+        var app0_length = buf[4] * 256 + buf[5];
+        var newImage = [255, 216].concat(exifArray, buf.slice(4 + app0_length));
+        var jpegData = new Uint8Array(newImage);
+        return jpegData;
     };
+
 
     // compute vector index from matrix one
     var ivect = function (ix, iy, w) {
@@ -267,12 +273,14 @@ var MinifyJpegAsync = (function () {
         return ((ix + w * iy) * 4);
     };
 
+
     var inner = function (f00, f10, f01, f11, x, y) {
         var un_x = 1.0 - x;
         var un_y = 1.0 - y;
         return (f00 * un_x * un_y + f10 * x * un_y + f01 * un_x * y + f11 * x * y);
     };
-    
+
+
     var bilinear = function (srcImg, destImg, scale) {
         // taking the unit square
         var srcWidth = srcImg.width;
@@ -320,5 +328,7 @@ var MinifyJpegAsync = (function () {
             }
         }
     };
+
+
     return that;
 })();
