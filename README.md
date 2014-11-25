@@ -12,7 +12,7 @@ Copy this project on desktop and open example.html
 
 Environment
 -----------
-TESTED(24/01/2013): FireFox, GoogleChrome, IE10, Opera.
+TESTED(24/01/2013): FireFox, GoogleChrome, IE10, Opera.  
 PhantomJS
 [![Build Status](https://travis-ci.org/hMatoba/JavaScript-MinifyJpegAsync.svg)](https://travis-ci.org/hMatoba/JavaScript-MinifyJpegAsync)
 
