@@ -9,7 +9,7 @@
 <body>
     長辺の長さ(longside length): <input type="text" id="length" value="480"><br><br>
     <div id="up">JPEG FILES ONLY<br>You can choose multiple files<br></div>
-    <div id="shori"></div>
+    <div id="status"></div>
     <div id="resized"></div>
 <script>
 if (typeof window.navigator.msSaveBlob === "undefined") {
@@ -25,72 +25,61 @@ if (typeof window.navigator.msSaveBlob === "undefined") {
 }
 
 
-var processedFiles = [];
-var fileArray = [];
-
 function handleFileSelect(evt) {
-    length = parseInt($('#length').val());
+    var length = parseInt($('#length').val());
+    var file;
+    var jpegs = [];
     if (!length) {
         return;
     }
     var files = evt.target.files; // FileList object
-    fileArray = [];
-    for (var x = 0; x < files.length; x++) {
-        fileArray.push(files[x]);
-    }
-    handleFiles();
-}
-
-
-function handleFiles() {
-    if (fileArray.length == 0) {
-        $("#keika").html("FINISHED");
-        $("#shori").html('');
-        return;
-    }
-    while (!fileArray[0].type.match('image/jpeg.*')) {
-        if (fileArray.length == 0) {
-            $("#keika").html("FINISHED")
-            return;
+    for (var n = 0; n < files.length; n++) {
+        var file = files[n];
+        if (!file.type.match('image/jpeg.*')) {
+            console.log("Pass: " + file.name);
         } else {
-            fileArray.shift(0);
+            jpegs.push(file);
         }
     }
-    f = fileArray.shift(0);
-    $("#keika").html("Left: " + (fileArray.length + 1));
-    if (processedFiles.indexOf(f.name) >= 0) {
-        return handleFiles();
-    }
-    processedFiles.push(f.name);
-    var reader = new FileReader();
-    var n = processedFiles.length;
-    $("#shori").html('<div id="load' + n + '">loading: ' + f.name + '</div>');
+    
+    var statusEl = $("#status");
+    var resizedEl = $("#resized");
+    var processJpeg = function() {
+        var f;
+        if (jpegs.length == 0){
+            statusEl.html('finished.');
+            return;
+        }
+        f = jpegs.shift(0);
+        var reader = new FileReader();
+        statusEl.html('<div >loading: ' + f.name + '</div>');
 
-    // Jpeg processing
-    reader.onloadend = function (e) {
-        MinifyJpegAsync.minify(e.target.result, length, print);
-        //MinifyJpeg.minify(e.target.result, length, postJpeg);
+        // Jpeg processing
+        reader.onloadend = (function(theFile) {
+            return function(e) {
+                MinifyJpegAsync.minify(e.target.result, length, function(data){
+                    //postJpeg(data);
+
+                    var enc = "data:image/jpeg;base64," + MinifyJpegAsync.encode64(data);
+                    var img = new Image();
+                    img.src = enc;
+                    if (saveJpeg) {
+                        var blob = new Blob([data], {
+                            type: "image\/jpeg"
+                        });
+                        img.onclick = saveJpeg(blob);
+                    }
+                    resizedEl.prepend("<br>" + theFile.name);
+                    resizedEl.prepend(img);
+                    resizedEl.prepend("<br><br>");
+
+                    processJpeg();
+                });
+            };
+        })(f);
+        reader.readAsDataURL(f);
     };
-
-    reader.readAsDataURL(f);
-}
-
-
-function print(data) {
-    var enc = "data:image/jpeg;base64," + MinifyJpegAsync.encode64(data);
-    var img = new Image();
-    img.src = enc;
-    if (saveJpeg) {
-        var blob = new Blob([data], {
-            type: "image\/jpeg"
-        });
-        img.onclick = saveJpeg(blob);
-    }
-    $('#resized').prepend(img);
-    $('#resized').prepend("<br><br>");
-
-    // loop left files processing
-    handleFiles();
+    processJpeg();
 }
 
 
@@ -104,10 +93,10 @@ function postJpeg(data) {
 
 document.body.onload = function () {
     if (typeof (FileReader) == "function") {
-        var html = '<input type="file" id="files" class="form" name="files[]" multiple /><br>' +
-            '<div id="keika"><div>'
+        var html = '<input type="file" id="files" class="form" name="files[]" ' +
+                   'onchange="handleFileSelect(event);" multiple /><br>' +
+                   '<div id="keika"><div>';
         $('#up').append(html);
-        document.getElementById('files').addEventListener('change', handleFileSelect, false);
     } else {
         var html = '<form action="/up" method="post" enctype="multipart/form-data">' +
             '<fieldset><legend>写真を追加</legend>' +
