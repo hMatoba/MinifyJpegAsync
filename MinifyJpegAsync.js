@@ -60,17 +60,17 @@ var MinifyJpegAsync = (function () {
                 resized,
                 newImage;
             
-            if (chouhen < NEW_SIZE) {
-                return new Uint8Array(rawImage);
-            }
-
-            exif = getExif(segments);
-            resized = resize(imageObj, segments, NEW_SIZE);
-
-            if (exif.length) {
-                newImage = insertExif(resized, exif);
+            if (chouhen <= NEW_SIZE) {
+                newImage = new Uint8Array(rawImage);
             } else {
-                newImage = new Uint8Array(that.decode64(resized.replace("data:image/jpeg;base64,", "")));
+                exif = getExif(segments);
+                resized = resize(imageObj, segments, NEW_SIZE);
+
+                if (exif.length) {
+                    newImage = insertExif(resized, exif);
+                } else {
+                    newImage = new Uint8Array(that.decode64(resized.replace("data:image/jpeg;base64,", "")));
+                }
             }
 
             callback(newImage);
