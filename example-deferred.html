@@ -23,29 +23,6 @@ if (typeof window.navigator.msSaveBlob === "undefined") {
         };
     };
 }
-    
-
-function DeferChain() {
-    this._funcs = [];
-}
-
-DeferChain.prototype = {
-    concat: function(func){
-        this._funcs.push(func);
-    },
-    
-    exec: function(){
-        if (this._funcs.length){
-            var funcStr = "this._funcs[0]()";
-            for (var i=1, func; func=this._funcs[i]; i++){
-                funcStr += ".then(this._funcs[" + i + "])";
-            }
-            eval(funcStr);
-        } else {
-            throw new Error("No function is given to 'DeferChain' instance.");
-        }
-    },
-};
 
 
 function handleFileSelect(evt) {
@@ -65,11 +42,10 @@ function handleFileSelect(evt) {
         }
     }
     
-    var dc = new DeferChain();
+    var d = (new $.Deferred()).resolve();
     for (var i=0, f; f=jpegs[i]; i++){
-        dc.concat(processJpeg(f, length));
+        d = d.then(processJpeg(f, length));
     }
-    dc.exec();
 }
     
 var processJpeg = function (f, length){
