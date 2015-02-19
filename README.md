@@ -34,7 +34,7 @@ How to Use
     function post(data) {
         var req = new XMLHttpRequest();
         req.open("POST", "/jpeg", false);
-        req.setRequestHeader('Content-Type', 'image\/jpeg');
+        req.setRequestHeader('Content-Type', 'image/jpeg');
         req.send(data.buffer);
     }
 
