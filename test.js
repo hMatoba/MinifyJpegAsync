@@ -15,9 +15,13 @@ MinifyJpegAsync.minify(img1, maxLength, function(data){
             test1 = false;
         } else {
             test1 = true;
-        }          
+        }
     };
-    img.src = "data:image/jpeg;base64," + MinifyJpegAsync.encode64(data);
+    var array = [];
+    for (var p=0; p<data.byteLength; p++) {
+        array[p] = data[p];
+    }
+    img.src = "data:image/jpeg;base64," + MinifyJpegAsync.encode64(array);
 });
 
 MinifyJpegAsync.minify(img2, maxLength, function(data){
@@ -29,9 +33,13 @@ MinifyJpegAsync.minify(img2, maxLength, function(data){
             test2 = false;
         } else {
             test2 = true;
-        }          
+        }
     };
-    img.src = "data:image/jpeg;base64," + MinifyJpegAsync.encode64(data);
+    var array = [];
+    for (var p=0; p<data.byteLength; p++) {
+        array[p] = data[p];
+    }
+    img.src = "data:image/jpeg;base64," + MinifyJpegAsync.encode64(array);
 });
 
 setInterval(function() {

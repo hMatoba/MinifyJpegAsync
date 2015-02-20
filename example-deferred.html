@@ -41,13 +41,13 @@ function handleFileSelect(evt) {
             jpegs.push(file);
         }
     }
-    
+
     var d = (new $.Deferred()).resolve();
     for (var i=0, f; f=jpegs[i]; i++){
         d = d.then(processJpeg(f, length));
     }
 }
-    
+
 var processJpeg = function (f, length){
     return function(){
         console.log("load: " + f.name);
@@ -73,8 +73,9 @@ var processJpeg = function (f, length){
                 resizedEl.prepend("<br>" + f.name);
                 resizedEl.prepend(img);
                 resizedEl.prepend("<br><br>");
-                
-                console.log("processed: " + f.name);
+
+                console.log();
+                statusEl.html('<div >processed: ' + f.name + '</div>');
                 d.resolve();
             });
         };
