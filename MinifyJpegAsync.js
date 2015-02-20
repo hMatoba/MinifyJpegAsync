@@ -80,40 +80,12 @@ var MinifyJpegAsync = (function () {
     };
 
 
-//    that.encode64 = function (input) {
-//        var binStr = String.fromCharCode.apply(null, input)
-//        return btoa(binStr);
-//    };
     that.encode64 = function (input) {
-        var output = "",
-            chr1, chr2, chr3 = "",
-            enc1, enc2, enc3, enc4 = "",
-            i = 0;
-
-        do {
-            chr1 = input[i++];
-            chr2 = input[i++];
-            chr3 = input[i++];
-
-            enc1 = chr1 >> 2;
-            enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
-            enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
-            enc4 = chr3 & 63;
-
-            if (isNaN(chr2)) {
-                enc3 = enc4 = 64;
-            } else if (isNaN(chr3)) {
-                enc4 = 64;
-            }
-
-            output += KEY_STR.charAt(enc1) +
-                KEY_STR.charAt(enc2) +
-                KEY_STR.charAt(enc3) +
-                KEY_STR.charAt(enc4);
-            chr1 = chr2 = chr3 = "";
-            enc1 = enc2 = enc3 = enc4 = "";
-        } while (i < input.length);
-        return output;
+        var binStr = ""
+        for (var p=0; p<input.length; p++) {
+            binStr += String.fromCharCode(input[p]);
+        }
+        return btoa(binStr);
     };
 
 
