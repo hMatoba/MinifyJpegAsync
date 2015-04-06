@@ -1,6 +1,6 @@
 Tests.minifyAsyncTest1 = function (finish) {
     var maxLength = 100;
-    var jpegData = "data:image/jpeg;base64," + btoa(Tests.files["img1.jpg"]);
+    var jpegData = Tests.files["img1.jpg"];
     MinifyJpegAsync.minify(jpegData, maxLength, function(data){
         var img = new Image();
         img.onload = function() {
@@ -9,18 +9,14 @@ Tests.minifyAsyncTest1 = function (finish) {
             phestum.assertEqual(longSide, maxLength);
             finish();
         };
-        var array = [];
-        for (var p=0; p<data.byteLength; p++) {
-            array[p] = data[p];
-        }
-        img.src = "data:image/jpeg;base64," + MinifyJpegAsync.encode64(array);
+        img.src = "data:image/jpeg;base64," + btoa(data);
     });
 };
 
 
 Tests.minifyAsyncTest2 = function (finish) {
     var maxLength = 100;
-    var jpegData = "data:image/jpeg;base64," + btoa(Tests.files["img2.jpg"]);
+    var jpegData = Tests.files["img2.jpg"];
     MinifyJpegAsync.minify(jpegData, maxLength, function(data){
         var img = new Image();
         img.onload = function() {
@@ -29,10 +25,6 @@ Tests.minifyAsyncTest2 = function (finish) {
             phestum.assertEqual(longSide, maxLength);
             finish();
         };
-        var array = [];
-        for (var p=0; p<data.byteLength; p++) {
-            array[p] = data[p];
-        }
-        img.src = "data:image/jpeg;base64," + MinifyJpegAsync.encode64(array);
+        img.src = "data:image/jpeg;base64," + btoa(data);
     });
 };

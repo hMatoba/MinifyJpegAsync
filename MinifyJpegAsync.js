@@ -13,24 +13,20 @@ var MinifyJpegAsync = (function () {
             rawImage = [],
             imageStr = "";
 
-        if (image instanceof ArrayBuffer) {
-            if (image[0] == 255 && image[1] == 216) {
-                for (var i = 0; i < image.byteLength; i++) {
-                    rawImage[i] = image[i];
-                }
-                imageStr = "data:image/jpeg;base64," + that.encode64(rawImage);
-            } else {
-                throw "MinifyJpeg.minify got a not JPEG data";
-            }
-        } else if (typeof (image) == "string") {
-            if (!image.match("data:image/jpeg;base64,")) {
-                throw "MinifyJpeg.minify got a not JPEG data";
-            } else {
+        if (typeof (image) == "string") {
+            if (image.match("data:image/jpeg;base64,")) {
                 rawImage = that.decode64(image.replace("data:image/jpeg;base64,", ""));
                 imageStr = image;
+            } else if (image.match("\xff\xd8")) {
+                for (var p=0; p<image.length; p++) {
+                    rawImage[p] = image.charCodeAt(p);
+                }
+                imageStr = "data:image/jpeg;base64," + btoa(image);
+            } else {
+                throw "MinifyJpeg.minify got a not JPEG data";
             }
         } else {
-            throw "First argument must be 'DataURL string' or ArrayBuffer.";
+            throw "First argument must be 'string'.";
         }
 
         imageObj.onload = function () {
@@ -43,7 +39,7 @@ var MinifyJpegAsync = (function () {
                 newImage;
 
             if (chouhen <= NEW_SIZE) {
-                newImage = new Uint8Array(rawImage);
+                newImage = atob(imageStr.replace("data:image/jpeg;base64,", ""));
             } else {
                 exif = getExif(segments);
                 resized = resize(imageObj, segments, NEW_SIZE);
@@ -51,7 +47,7 @@ var MinifyJpegAsync = (function () {
                 if (exif.length) {
                     newImage = insertExif(resized, exif);
                 } else {
-                    newImage = new Uint8Array(that.decode64(resized.replace("data:image/jpeg;base64,", "")));
+                    newImage = atob(resized.replace("data:image/jpeg;base64,", ""));
                 }
             }
 
@@ -63,7 +59,7 @@ var MinifyJpegAsync = (function () {
 
 
     that.encode64 = function (input) {
-        var binStr = ""
+        var binStr = "";
         for (var p=0; p<input.length; p++) {
             binStr += String.fromCharCode(input[p]);
         }
@@ -188,7 +184,10 @@ var MinifyJpegAsync = (function () {
         }
         var app0_length = buf[4] * 256 + buf[5];
         var newImage = [255, 216].concat(exifArray, buf.slice(4 + app0_length));
-        var jpegData = new Uint8Array(newImage);
+        var jpegData = "";
+        for (var p=0; p<newImage.length; p++) {
+            jpegData += String.fromCharCode(newImage[p]);
+        }
         return jpegData;
     };
 

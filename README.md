@@ -16,14 +16,12 @@ TESTED(24/01/2013): FireFox, GoogleChrome, IE10, Opera.
 PhantomJS
 
 
-Functions
----------
-    minify(image, sideLength, callback) - Resizes propotionally. Returns resized jpeg data as Uint8Array.
-          If desired size is bigger than input, no manipulation is done.
-        image - jpeg data(DataURL string or ArrayBuffer)
+Function
+--------
+    minify(image, sideLength, callback) - Resizes jpeg image propotionally. If desired size is bigger than input, 'minify' doesn't resize image.
+        image - jpeg data(DataURL string or binary string)
         sideLength - int value of new image's long side length
-        callback - callback function will be done with resized jpeg data as argument(Uint8Array)
-    encode64(data) - Convert Array to DataURL string
+        callback - callback function will be done with resized jpeg data(binary string) as argument.
 
 
 How to Use
@@ -32,10 +30,16 @@ How to Use
     <script source="/js/MinifyJpegAsync.js" />
     <script>
     function post(data) {
+        var array = [];
+        for (var p=0; p<data.length; p++) {
+            array[p] = data.charCodeAt(p);
+        }
+        var u8array = new Uint8Array(array);
+
         var req = new XMLHttpRequest();
-        req.open("POST", "/jpeg", false);
+        req.open("POST", "/resize", false);
         req.setRequestHeader('Content-Type', 'image/jpeg');
-        req.send(data.buffer);
+        req.send(u8array.buffer);
     }
 
     function handleFileSelect(evt) {

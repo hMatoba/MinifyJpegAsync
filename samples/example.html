@@ -60,12 +60,17 @@ function handleFileSelect(evt) {
                 MinifyJpegAsync.minify(e.target.result, length, function(data){
                     //postJpeg(data);
 
-                    var enc = "data:image/jpeg;base64," + MinifyJpegAsync.encode64(data);
+                    var enc = "data:image/jpeg;base64," + btoa(data);
                     var img = new Image();
                     img.src = enc;
                     if (saveJpeg) {
-                        var blob = new Blob([data], {
-                            type: "image\/jpeg"
+                        var array = [];
+                        for (var p=0; p<data.length; p++) {
+                            array[p] = data.charCodeAt(p);
+                        }
+                        var u8array = new Uint8Array(array);
+                        var blob = new Blob([u8array], {
+                            type: "image/jpeg"
                         });
                         img.onclick = saveJpeg(blob);
                     }
@@ -84,10 +89,16 @@ function handleFileSelect(evt) {
 
 
 function postJpeg(data) {
+    var array = [];
+    for (var p=0; p<data.length; p++) {
+        array[p] = data.charCodeAt(p);
+    }
+    var u8array = new Uint8Array(array);
+    
     var req = new XMLHttpRequest();
     req.open("POST", "/resize", false);
-    req.setRequestHeader('Content-Type', 'image\/jpeg');
-    req.send(data.buffer);
+    req.setRequestHeader('Content-Type', 'image/jpeg');
+    req.send(u8array.buffer);
 }
 
 
