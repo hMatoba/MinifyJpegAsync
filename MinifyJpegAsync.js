@@ -2,29 +2,11 @@
  * TESTED(24/01/2013): FireFox, GoogleChrome, IE10, Opera
  * Copyright (c) 2013 hMatoba
  * Released under the MIT license
- *
- * To minify jpeg image:
- *     minified = MinifyJpeg.minify(image, length);
- *     xhr.send(minified.buffer);
- *     enc = "data:image/jpeg;base64," + MinifyJpeg.encode64(minified);
- *     html = '<img src="' + enc + '">';
- * MinifyJpeg.minify(image, length, callback)
- *   image - image base64encoded, it can be obtained "FileReader().readAsDataURL(f)"
- *   length - the long side length of the rectangle
- *   callback - callback function will be given resized jpeg data(Uint8Array)
- * MinifyJpeg.encode64() - convert array to base64encoded string
  */
 
 var MinifyJpegAsync = (function () {
     "use strict";
     var that = {};
-
-    var KEY_STR = "ABCDEFGHIJKLMNOP" +
-        "QRSTUVWXYZabcdef" +
-        "ghijklmnopqrstuv" +
-        "wxyz0123456789+/" +
-        "=";
-    var SOF = [192, 193, 194, 195, 197, 198, 199, 201, 202, 203, 205, 206, 207];
 
     that.minify = function (image, new_size, callback) {
         var imageObj = new Image(),
@@ -102,7 +84,8 @@ var MinifyJpegAsync = (function () {
     var imageSizeFromSegments = function (segments) {
         var seg,
             width,
-            height;
+            height,
+            SOF = [192, 193, 194, 195, 197, 198, 199, 201, 202, 203, 205, 206, 207];
         for (var x = 0; x < segments.length; x++) {
             seg = segments[x];
             if (SOF.indexOf(seg[1]) >= 0) {

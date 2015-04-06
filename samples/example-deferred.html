@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <title>MinifyJpegAsync Demo</title>
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
-  <script src="MinifyJpegAsync.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+  <script src="../MinifyJpegAsync.js"></script>
 </head>
 <body>
     長辺の長さ(longside length): <input type="text" id="length" value="480"><br><br>
@@ -41,46 +41,48 @@ function handleFileSelect(evt) {
             jpegs.push(file);
         }
     }
-    
-    var statusEl = $("#status");
-    var resizedEl = $("#resized");
-    var processJpeg = function() {
-        var f;
-        if (jpegs.length == 0){
-            statusEl.html('finished.');
-            return;
-        }
-        f = jpegs.shift(0);
+
+    var d = (new $.Deferred()).resolve();
+    for (var i=0, f; f=jpegs[i]; i++){
+        d = d.then(processJpeg(f, length));
+    }
+}
+
+var processJpeg = function (f, length){
+    return function(){
+        console.log("load: " + f.name);
+        var d = new $.Deferred();
         var reader = new FileReader();
+        var statusEl = $("#status");
+        var resizedEl = $("#resized");
         statusEl.html('<div >loading: ' + f.name + '</div>');
 
         // Jpeg processing
-        reader.onloadend = (function(theFile) {
-            return function(e) {
-                MinifyJpegAsync.minify(e.target.result, length, function(data){
-                    //postJpeg(data);
+        reader.onloadend = function(e) {
+            MinifyJpegAsync.minify(e.target.result, length, function(data){
+                //postJpeg(data);
+                var enc = "data:image/jpeg;base64," + MinifyJpegAsync.encode64(data);
+                var img = new Image();
+                img.src = enc;
+                if (saveJpeg) {
+                    var blob = new Blob([data], {
+                        type: "image\/jpeg"
+                    });
+                    img.onclick = saveJpeg(blob);
+                }
+                resizedEl.prepend("<br>" + f.name);
+                resizedEl.prepend(img);
+                resizedEl.prepend("<br><br>");
 
-                    var enc = "data:image/jpeg;base64," + MinifyJpegAsync.encode64(data);
-                    var img = new Image();
-                    img.src = enc;
-                    if (saveJpeg) {
-                        var blob = new Blob([data], {
-                            type: "image\/jpeg"
-                        });
-                        img.onclick = saveJpeg(blob);
-                    }
-                    resizedEl.prepend("<br>" + theFile.name);
-                    resizedEl.prepend(img);
-                    resizedEl.prepend("<br><br>");
-
-                    processJpeg();
-                });
-            };
-        })(f);
+                console.log();
+                statusEl.html('<div >processed: ' + f.name + '</div>');
+                d.resolve();
+            });
+        };
         reader.readAsDataURL(f);
+        return d.promise();
     };
-    processJpeg();
-}
+};
 
 
 function postJpeg(data) {

@@ -1,3 +1,3 @@
 sudo: false
 
-script: phantomjs test.js
+script: phantomjs phestum.js MinifyJpegAsync.js
