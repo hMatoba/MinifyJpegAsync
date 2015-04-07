@@ -8,7 +8,10 @@
 </head>
 <body>
     長辺の長さ(longside length): <input type="text" id="length" value="480"><br><br>
-    <div id="up">JPEG FILES ONLY<br>You can choose multiple files<br></div>
+    <div id="up">JPEG FILES ONLY<br>You can choose multiple files<br>
+        <input type="file" id="files" class="form" name="files[]" onchange="handleFileSelect(event);" multiple /><br>
+        <div id="keika"></div>
+    </div>
     <div id="status"></div>
     <div id="resized"></div>
 <script>
@@ -17,8 +20,16 @@ if (typeof window.navigator.msSaveBlob === "undefined") {
 } else {
     $("#up").append("IE 10 and 11, left-click on image to save.<br>");
     var n = 0;
-    var saveJpeg = function (blob) {
+    var saveJpeg = function (data) {
         return function () {
+            var array = [];
+            for (var p=0; p<data.length; p++) {
+                array[p] = data.charCodeAt(p);
+            }
+            var u8array = new Uint8Array(array);
+            var blob = new Blob([u8array], {
+                type: "image/jpeg"
+            });
             window.navigator.msSaveBlob(blob, "minifyDemo" + (n++) + ".jpg");
         };
     };
@@ -35,9 +46,7 @@ function handleFileSelect(evt) {
     var files = evt.target.files; // FileList object
     for (var n = 0; n < files.length; n++) {
         var file = files[n];
-        if (!file.type.match('image/jpeg.*')) {
-            console.log("Pass: " + file.name);
-        } else {
+        if (file.type.match('image/jpeg.*')) {
             jpegs.push(file);
         }
     }
@@ -57,7 +66,6 @@ var processJpeg = function (f, length){
         var resizedEl = $("#resized");
         statusEl.html('<div >loading: ' + f.name + '</div>');
 
-        // Jpeg processing
         reader.onloadend = function(e) {
             MinifyJpegAsync.minify(e.target.result, length, function(data){
                 //postJpeg(data);
@@ -65,26 +73,17 @@ var processJpeg = function (f, length){
                 var img = new Image();
                 img.src = enc;
                 if (saveJpeg) {
-                    var array = [];
-                    for (var p=0; p<data.length; p++) {
-                        array[p] = data.charCodeAt(p);
-                    }
-                    var u8array = new Uint8Array(array);
-                    var blob = new Blob([u8array], {
-                        type: "image\/jpeg"
-                    });
-                    img.onclick = saveJpeg(blob);
+                    img.onclick = saveJpeg(data);
                 }
                 resizedEl.prepend("<br>" + f.name);
                 resizedEl.prepend(img);
                 resizedEl.prepend("<br><br>");
 
-                console.log();
                 statusEl.html('<div >processed: ' + f.name + '</div>');
                 d.resolve();
             });
         };
-        reader.readAsBinaryString(f);
+        reader.readAsDataURL(f);
         return d.promise();
     };
 };
@@ -106,17 +105,8 @@ function postJpeg(data) {
 
 document.body.onload = function () {
     if (typeof (FileReader) == "function") {
-        var html = '<input type="file" id="files" class="form" name="files[]" ' +
-                   'onchange="handleFileSelect(event);" multiple /><br>' +
-                   '<div id="keika"><div>';
-        $('#up').append(html);
     } else {
-        var html = '<form action="/up" method="post" enctype="multipart/form-data">' +
-            '<fieldset><legend>写真を追加</legend>' +
-            '<input type="file" name="photo[]" multiple/><br>' +
-            '<input type = "submit" value="写真を送る">' +
-            '</fieldset></form><br><br>';
-        $('#up').append("");
+        alert("This example needs FileReader API. To try, use other latest browser.");
     }
 };
 </script>
