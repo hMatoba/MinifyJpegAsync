@@ -1,6 +1,6 @@
-JavaScript-MinifyJpegAsync
-==========================
-[![Build Status](https://travis-ci.org/hMatoba/JavaScript-MinifyJpegAsync.svg)](https://travis-ci.org/hMatoba/JavaScript-MinifyJpegAsync)
+MinifyJpegAsync
+===============
+[![Build Status](https://travis-ci.org/hMatoba/MinifyJpegAsync.svg)](https://travis-ci.org/hMatoba/MinifyJpegAsync)
 
 To minify JPEG images without losing EXIF.
 
