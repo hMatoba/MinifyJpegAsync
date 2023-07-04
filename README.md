@@ -2,7 +2,7 @@ MinifyJpegAsync
 ===============
 [![Build Status](https://travis-ci.org/hMatoba/MinifyJpegAsync.svg)](https://travis-ci.org/hMatoba/MinifyJpegAsync)
 
-To minify JPEG images without losing EXIF.
+To minify JPEG images with or without loosing jpeg image quality or EXIF data.
 
 
 Demo
