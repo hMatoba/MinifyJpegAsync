@@ -18,7 +18,7 @@ PhantomJS
 
 Function
 --------
-    minify(image, sideLength, callback) - Resizes jpeg image propotionally. If desired size is bigger than input, 'minify' doesn't resize image.
+    minify(image, sideLength, quality, keepExif, callback) - Resizes jpeg image propotionally. If desired size is bigger than input, 'minify' doesn't resize image.
         image - jpeg data(DataURL string or binary string)
         sideLength - int value of new image's long side length
         quality A float between 0 and 1 depending of the picture quality you want. 1 is the best quality available from source.
