@@ -21,6 +21,8 @@ Function
     minify(image, sideLength, callback) - Resizes jpeg image propotionally. If desired size is bigger than input, 'minify' doesn't resize image.
         image - jpeg data(DataURL string or binary string)
         sideLength - int value of new image's long side length
+        quality A float between 0 and 1 depending of the picture quality you want. 1 is the best quality available from source.
+        keepExif true if you want to keep exif data
         callback - callback function will be done with resized jpeg data(binary string) as argument.
 
 
@@ -48,7 +50,7 @@ How to Use
         for (var i = 0, f; f = files[i]; i++){
             var reader = new FileReader();
             reader.onloadend = function(e){
-                MinifyJpegAsync.minify(e.target.result, 1280, post);
+                MinifyJpegAsync.minify(e.target.result, 1280, 1/*Max quality*/, true /*keepExif*/, post);
             };
             reader.readAsDataURL(f);
         }
@@ -57,6 +59,13 @@ How to Use
     document.getElementById('files').addEventListener('change', handleFileSelect, false);
     </script>
 
+Testing
+-------
+From the root project directory, run the following command:
+
+```bash
+user@ubuntu:~/projects/MinifyJpegAsync$ phantomjs phestum.js MinifyJpegAsync.js
+```
 
 License
 -------

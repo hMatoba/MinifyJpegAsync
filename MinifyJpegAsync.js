@@ -10,11 +10,11 @@ var MinifyJpegAsync = (function () {
 
     /**
      *
-     * @param image
-     * @param new_size
+     * @parame image - jpeg data(DataURL string or binary string)
+     * @param new_size - int value of new image's long side length
      * @param quality A float between 0 and 1 depending of the picture quality you want. 1 is the best quality available from source.
      * @param keepExif true if you want to keep exif data
-     * @param callback
+     * @param callback - callback function will be done with resized jpeg data(binary string) as argument.
      */
     that.minify = function (image, new_size, quality, keepExif, callback) {
         var imageObj = new Image(),
