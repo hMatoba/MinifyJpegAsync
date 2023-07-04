@@ -8,12 +8,20 @@ var MinifyJpegAsync = (function () {
     "use strict";
     var that = {};
 
-    that.minify = function (image, new_size, callback) {
+    /**
+     *
+     * @param image
+     * @param new_size
+     * @param quality A float between 0 and 1 depending of the picture quality you want. 1 is the best quality available from source.
+     * @param keepExif true if you want to keep exif data
+     * @param callback
+     */
+    that.minify = function (image, new_size, quality, keepExif, callback) {
         var imageObj = new Image(),
-            rawImage = [],
-            imageStr = "";
+          rawImage = [],
+          imageStr = "";
 
-        if (typeof (image) == "string") {
+        if (typeof (image) === "string") {
             if (image.match("data:image/jpeg;base64,")) {
                 rawImage = that.decode64(image.replace("data:image/jpeg;base64,", ""));
                 imageStr = image;
@@ -31,26 +39,30 @@ var MinifyJpegAsync = (function () {
 
         imageObj.onload = function () {
             var segments = slice2Segments(rawImage),
-                NEW_SIZE = parseInt(new_size),
-                size = imageSizeFromSegments(segments),
-                chouhen = (size[0] >= size[1]) ? size[0] : size[1];
+              NEW_SIZE = parseInt(new_size),
+              size = imageSizeFromSegments(segments),
+              chouhen = (size[0] >= size[1]) ? size[0] : size[1];
             var exif,
-                resized,
-                newImage;
+              resized,
+              newImage;
 
             if (chouhen <= NEW_SIZE) {
-                newImage = atob(imageStr.replace("data:image/jpeg;base64,", ""));
-            } else {
                 exif = getExif(segments);
-                resized = resize(imageObj, segments, NEW_SIZE);
-
+                resized = resize(imageObj, segments, chouhen, quality);
                 if (exif.length) {
                     newImage = insertExif(resized, exif);
                 } else {
                     newImage = atob(resized.replace("data:image/jpeg;base64,", ""));
                 }
+            } else {
+                exif = getExif(segments);
+                resized = resize(imageObj, segments, NEW_SIZE, quality);
+                if (exif.length && keepExif) {
+                    newImage = insertExif(resized, exif);
+                } else {
+                    newImage = atob(resized.replace("data:image/jpeg;base64,", ""));
+                }
             }
-
             callback(newImage);
         };
         imageObj.src = imageStr;
@@ -79,9 +91,9 @@ var MinifyJpegAsync = (function () {
 
     var imageSizeFromSegments = function (segments) {
         var seg,
-            width,
-            height,
-            SOF = [192, 193, 194, 195, 197, 198, 199, 201, 202, 203, 205, 206, 207];
+          width,
+          height,
+          SOF = [192, 193, 194, 195, 197, 198, 199, 201, 202, 203, 205, 206, 207];
         for (var x = 0; x < segments.length; x++) {
             seg = segments[x];
             if (SOF.indexOf(seg[1]) >= 0) {
@@ -102,10 +114,10 @@ var MinifyJpegAsync = (function () {
 
     var slice2Segments = function (rawImageArray) {
         var head = 0,
-            segments = [];
+          segments = [];
         var length,
-            endPoint,
-            seg;
+          endPoint,
+          seg;
 
         while (1) {
             if (rawImageArray[head] == 255 && rawImageArray[head + 1] == 218) {
@@ -129,38 +141,43 @@ var MinifyJpegAsync = (function () {
     };
 
 
-    var resize = function (img, segments, NEW_SIZE) {
+    var resize = function (img, segments, NEW_SIZE, quality) {
         var size = imageSizeFromSegments(segments),
-            width = size[0],
-            height = size[1],
-            chouhen = (width >= height) ? width : height,
-            newSize = NEW_SIZE,
-            scale = parseFloat(newSize) / chouhen,
-            newWidth = parseInt(parseFloat(newSize) / chouhen * width),
-            newHeight = parseInt(parseFloat(newSize) / chouhen * height);
+          width = size[0],
+          height = size[1],
+          chouhen = (width >= height) ? width : height,
+          newSize = NEW_SIZE,
+          scale = parseFloat(newSize) / chouhen,
+          newWidth = parseInt(parseFloat(newSize) / chouhen * width),
+          newHeight = parseInt(parseFloat(newSize) / chouhen * height);
         var canvas,
-            ctx,
-            srcImg,
-            newCanvas,
-            newCtx,
-            destImg;
+          ctx,
+          srcImg,
+          newCanvas,
+          newCtx,
+          destImg;
 
+        var dpr = window.devicePixelRatio;
         canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        ctx = canvas.getContext("2d");
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        ctx = canvas.getContext("2d", {alpha: false, desynchronized: true});
+        ctx.imageSmoothingEnabled = true;
+        ctx.scale(dpr,dpr);
         ctx.drawImage(img, 0, 0);
         srcImg = ctx.getImageData(0, 0, width, height);
 
         newCanvas = document.createElement('canvas');
-        newCanvas.width = newWidth;
-        newCanvas.height = newHeight;
-        newCtx = newCanvas.getContext("2d");
+        newCanvas.width = newWidth * dpr;
+        newCanvas.height = newHeight * dpr;
+        newCtx = newCanvas.getContext("2d", {alpha: false, desynchronized: true});
+        newCtx.imageSmoothingEnabled = true;
+        newCtx.scale(dpr,dpr);
         destImg = newCtx.createImageData(newWidth, newHeight);
         bilinear(srcImg, destImg, scale);
 
         newCtx.putImageData(destImg, 0, 0);
-        return newCanvas.toDataURL("image/jpeg");
+        return newCanvas.toDataURL("image/jpeg", quality);
     };
 
 
@@ -236,19 +253,19 @@ var MinifyJpegAsync = (function () {
 
                 //r
                 dstData[idxD] = inner(srcData[idxS00], srcData[idxS10],
-                    srcData[idxS01], srcData[idxS11], dx, dy);
+                  srcData[idxS01], srcData[idxS11], dx, dy);
 
                 //g
                 dstData[idxD + 1] = inner(srcData[idxS00 + 1], srcData[idxS10 + 1],
-                    srcData[idxS01 + 1], srcData[idxS11 + 1], dx, dy);
+                  srcData[idxS01 + 1], srcData[idxS11 + 1], dx, dy);
 
                 //b
                 dstData[idxD + 2] = inner(srcData[idxS00 + 2], srcData[idxS10 + 2],
-                    srcData[idxS01 + 2], srcData[idxS11 + 2], dx, dy);
+                  srcData[idxS01 + 2], srcData[idxS11 + 2], dx, dy);
 
                 //a
                 dstData[idxD + 3] = inner(srcData[idxS00 + 3], srcData[idxS10 + 3],
-                    srcData[idxS01 + 3], srcData[idxS11 + 3], dx, dy);
+                  srcData[idxS01 + 3], srcData[idxS11 + 3], dx, dy);
 
             }
         }
