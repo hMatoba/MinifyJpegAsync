@@ -10,7 +10,7 @@ var MinifyJpegAsync = (function () {
 
     /**
      *
-     * @parame image - jpeg data(DataURL string or binary string)
+     * @param image - jpeg data(DataURL string or binary string)
      * @param new_size - int value of new image's long side length
      * @param quality A float between 0 and 1 depending of the picture quality you want. 1 is the best quality available from source.
      * @param keepExif true if you want to keep exif data
@@ -39,25 +39,24 @@ var MinifyJpegAsync = (function () {
 
         imageObj.onload = function () {
             var segments = slice2Segments(rawImage),
-              NEW_SIZE = parseInt(new_size),
               size = imageSizeFromSegments(segments),
               chouhen = (size[0] >= size[1]) ? size[0] : size[1];
             var exif,
               resized,
               newImage;
 
-            if (chouhen <= NEW_SIZE) {
+            if (chouhen <= new_size) {
                 exif = getExif(segments);
-                resized = resize(imageObj, segments, chouhen, quality);
-                if (exif.length) {
+                resized = resize(imageObj, size[0], size[1], chouhen, quality);
+                if (exif.length > 0 && keepExif) {
                     newImage = insertExif(resized, exif);
                 } else {
                     newImage = atob(resized.replace("data:image/jpeg;base64,", ""));
                 }
             } else {
                 exif = getExif(segments);
-                resized = resize(imageObj, segments, NEW_SIZE, quality);
-                if (exif.length && keepExif) {
+                resized = resize(imageObj, size[0], size[1], new_size, quality);
+                if (exif.length > 0 && keepExif) {
                     newImage = insertExif(resized, exif);
                 } else {
                     newImage = atob(resized.replace("data:image/jpeg;base64,", ""));
@@ -69,16 +68,6 @@ var MinifyJpegAsync = (function () {
 
     };
 
-
-    that.encode64 = function (input) {
-        var binStr = "";
-        for (var p=0; p<input.length; p++) {
-            binStr += String.fromCharCode(input[p]);
-        }
-        return btoa(binStr);
-    };
-
-
     that.decode64 = function (input) {
         var binStr = atob(input);
         var buf = [];
@@ -88,48 +77,42 @@ var MinifyJpegAsync = (function () {
         return buf;
     };
 
-
-    var imageSizeFromSegments = function (segments) {
-        var seg,
-          width,
-          height,
-          SOF = [192, 193, 194, 195, 197, 198, 199, 201, 202, 203, 205, 206, 207];
-        for (var x = 0; x < segments.length; x++) {
-            seg = segments[x];
-            if (SOF.indexOf(seg[1]) >= 0) {
-                height = seg[5] * 256 + seg[6];
-                width = seg[7] * 256 + seg[8];
-                break;
+    /**
+     * @param seg segments of the jpeg image. Markers delimited
+     * @return {*[ width, height ]}
+     */
+    var imageSizeFromSegments = function (seg) {
+        var SOF = [192, 193, 194, 195, 197, 198, 199, 201, 202, 203, 205, 206, 207];
+        for (var x = 0; x < seg.length; x++) {
+            if (SOF.indexOf(seg[x][1]) >= 0) {
+                return [
+                  seg[x][7] * 256 + seg[x][8] /*width*/,
+                  seg[x][5] * 256 + seg[x][6] /*height*/
+                ];
             }
         }
-        return [width, height];
-    };
-
-
-    var getImageSize = function (imageArray) {
-        var segments = slice2Segments(imageArray);
-        return imageSizeFromSegments(segments);
     };
 
 
     var slice2Segments = function (rawImageArray) {
-        var head = 0,
-          segments = [];
-        var length,
-          endPoint,
-          seg;
-
+        var
+          head = 0,
+          segments = [],
+          length,
+          endPoint;
         while (1) {
-            if (rawImageArray[head] == 255 && rawImageArray[head + 1] == 218) {
+            if (rawImageArray[head] === 255 && rawImageArray[head + 1] === 218) { //SOS: Start of Scan
                 break;
             }
-            if (rawImageArray[head] == 255 && rawImageArray[head + 1] == 216) {
+            if (rawImageArray[head] === 255 && rawImageArray[head + 1] === 217) { //EOI: End of image
+                break;
+            }
+            if (rawImageArray[head] === 255 && rawImageArray[head + 1] === 216) { //SOI: Start of image
                 head += 2;
             } else {
                 length = rawImageArray[head + 2] * 256 + rawImageArray[head + 3];
                 endPoint = head + length + 2;
-                seg = rawImageArray.slice(head, endPoint);
-                segments.push(seg);
+                segments.push(rawImageArray.slice(head, endPoint));
                 head = endPoint;
             }
             if (head > rawImageArray.length) {
@@ -141,15 +124,11 @@ var MinifyJpegAsync = (function () {
     };
 
 
-    var resize = function (img, segments, NEW_SIZE, quality) {
-        var size = imageSizeFromSegments(segments),
-          width = size[0],
-          height = size[1],
-          chouhen = (width >= height) ? width : height,
-          newSize = NEW_SIZE,
-          scale = parseFloat(newSize) / chouhen,
-          newWidth = parseInt(parseFloat(newSize) / chouhen * width),
-          newHeight = parseInt(parseFloat(newSize) / chouhen * height);
+    var resize = function (img, oldWidth, oldHeight, new_size, quality) {
+        var chouhen = (oldWidth >= oldHeight) ? oldWidth : oldHeight,
+          scale = new_size/ chouhen,
+          newWidth = new_size / chouhen * oldWidth,
+          newHeight = new_size / chouhen * oldHeight;
         var canvas,
           ctx,
           srcImg,
@@ -159,35 +138,36 @@ var MinifyJpegAsync = (function () {
 
         var dpr = window.devicePixelRatio;
         canvas = document.createElement('canvas');
-        canvas.width = width * dpr;
-        canvas.height = height * dpr;
-        ctx = canvas.getContext("2d", {alpha: false, desynchronized: true});
+        canvas.width = oldWidth * dpr;
+        canvas.height = oldHeight * dpr;
+        ctx = canvas.getContext("2d", {alpha: false, desynchronized: true, depth: false, stencil: false, antialias: true});
         ctx.imageSmoothingEnabled = true;
         ctx.scale(dpr,dpr);
         ctx.drawImage(img, 0, 0);
-        srcImg = ctx.getImageData(0, 0, width, height);
+        srcImg = ctx.getImageData(0, 0, oldWidth, oldHeight);
 
         newCanvas = document.createElement('canvas');
         newCanvas.width = newWidth * dpr;
         newCanvas.height = newHeight * dpr;
-        newCtx = newCanvas.getContext("2d", {alpha: false, desynchronized: true});
+        newCtx = newCanvas.getContext("2d", {alpha: false, desynchronized: true, depth: false, stencil: false, antialias: true});
         newCtx.imageSmoothingEnabled = true;
         newCtx.scale(dpr,dpr);
         destImg = newCtx.createImageData(newWidth, newHeight);
-        bilinear(srcImg, destImg, scale);
-
-        newCtx.putImageData(destImg, 0, 0);
+        if (scale < 1) {
+            bilinear(srcImg, destImg, scale);
+            newCtx.putImageData(destImg, 0, 0);
+        } else {
+            newCtx.putImageData(srcImg, 0, 0);
+        }
         return newCanvas.toDataURL("image/jpeg", quality);
     };
 
 
-    var getExif = function (segments) {
-        var seg;
-        for (var x = 0; x < segments.length; x++) {
-            seg = segments[x];
-            if (seg[0] == 255 && seg[1] == 225) //(ff e1)
+    var getExif = function (seg) {
+        for (var x = 0; x < seg.length; x++) {
+            if (seg[x][0] === 255 && seg[x][1] === 225) //(ff e1: Exif Marker)
             {
-                return seg;
+                return seg[x];
             }
         }
         return [];
@@ -196,11 +176,10 @@ var MinifyJpegAsync = (function () {
 
     var insertExif = function (imageStr, exifArray) {
         var buf = that.decode64(imageStr.replace("data:image/jpeg;base64,", ""));
-        if (buf[2] != 255 || buf[3] != 224) {
+        if (buf[2] !== 255 || buf[3] !== 224) {
             throw "Couldn't find APP0 marker from resized image data.";
         }
-        var app0_length = buf[4] * 256 + buf[5];
-        var newImage = [255, 216].concat(exifArray, buf.slice(4 + app0_length));
+        var newImage = [255,216,255,224,0,16].concat(buf.slice(6, 6 + 12), [0,0]/*reset thumbnail sizes*/, buf.slice(6+12, buf.length-2),exifArray, [255,217] /*EOI*/);
         var jpegData = "";
         for (var p=0; p<newImage.length; p++) {
             jpegData += String.fromCharCode(newImage[p]);
@@ -233,12 +212,11 @@ var MinifyJpegAsync = (function () {
         var iyv, iy0, iy1, ixv, ix0, ix1;
         var idxD, idxS00, idxS10, idxS01, idxS11;
         var dx, dy;
-        var r, g, b, a;
-        for (i = 0; i < destImg.height; ++i) {
+        for (i = 0; i < destImg.height; i++) {
             iyv = (i + 0.5) / scale - 0.5;
             iy0 = Math.floor(iyv);
             iy1 = (Math.ceil(iyv) > (srcHeight - 1) ? (srcHeight - 1) : Math.ceil(iyv));
-            for (j = 0; j < destImg.width; ++j) {
+            for (j = 0; j < destImg.width; j++) {
                 ixv = (j + 0.5) / scale - 0.5;
                 ix0 = Math.floor(ixv);
                 ix1 = (Math.ceil(ixv) > (srcWidth - 1) ? (srcWidth - 1) : Math.ceil(ixv));
